@@ -219,7 +219,7 @@ class _LoginSignupScreenState extends State<AuthScreen> {
         children: [
           buildTextField(
             Icons.mail_outline,
-            "info@pictureai.com",
+            "info@facetrace.com",
             false,
             true,
             emailController,

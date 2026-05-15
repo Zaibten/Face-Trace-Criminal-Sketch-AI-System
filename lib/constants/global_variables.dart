@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 //String uri = 'http://192.168.0.106:7000';
-String uri = 'http://192.168.100.177:9000';
+String uri = 'https://facetraceserver.vercel.app';
 
 class GlobalVariables {
   // COLORS
@@ -23,8 +23,8 @@ class GlobalVariables {
   static var selectedNavBarColor = Colors.cyan[800]!;
   static const unselectedNavBarColor = Colors.black87;
   static const Color greyTextColor = Color.fromARGB(255, 0, 0, 0);
-  static const WelcomeText = ('WELCOME TO Picture AI');
-  static const Companyname = ('Picture AI');
+  static const WelcomeText = ('WELCOME TO Face Trace');
+  static const Companyname = ('Face Trace');
   static const Developers = ('Zaibten Developments');
 
   // STATIC IMAGES

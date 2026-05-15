@@ -35,7 +35,7 @@ class _Server {
   /// • Android emulator  → 'http://10.0.2.2:9000'
   /// • iOS simulator     → 'http://127.0.0.1:9000'
   /// • Physical device   → 'http://<your-local-ip>:9000'
-  static const baseUrl = 'http://192.168.100.177:9000';
+  static const baseUrl = 'https://facetraceserver.vercel.app';
 
   static Uri generateImage() => Uri.parse('$baseUrl/api/generate-image');
   static Uri generateSketch() => Uri.parse('$baseUrl/api/generate-sketch');
