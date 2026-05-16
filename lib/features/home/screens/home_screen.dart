@@ -891,18 +891,30 @@ class _CriminalSketchScreenState extends State<CriminalSketchScreen>
     } catch (e) { _snack('Share failed: $e'); }
   }
 
-  Future<void> _download() async {
-    if (!(await Permission.storage.request()).isGranted) { _snack('Permission denied'); return; }
-    try {
-      final dir = await getExternalStorageDirectory();
-      final folder = Directory('${dir?.path}/CriminalSketches');
-      if (!await folder.exists()) await folder.create(recursive: true);
-      final fname = 'sketch_${DateTime.now().millisecondsSinceEpoch}.png';
-      await _screenshotCtrl.captureAndSave(folder.path,
-          delay: const Duration(milliseconds: 100), fileName: fname, pixelRatio: 3);
-      _snack('✓ High-res sketch saved');
-    } catch (e) { _snack('Download failed: $e'); }
+Future<void> _download() async {
+  if (!(await Permission.storage.request()).isGranted) {
+    _snack('Permission denied');
+    return;
   }
+  try {
+    final dir = await getExternalStorageDirectory();
+    // ✅ Use the same FaceTrace folder as HomeScreen
+    final folder = Directory('${dir?.path}/FaceTrace');
+    if (!await folder.exists()) await folder.create(recursive: true);
+    final fname = 'sketch_${DateTime.now().millisecondsSinceEpoch}.png';
+    await _screenshotCtrl.captureAndSave(
+      folder.path,
+      delay: const Duration(milliseconds: 100),
+      fileName: fname,
+      pixelRatio: 3,
+    );
+    // ✅ Notify ArtsScreen just like HomeScreen does
+    HomeScreenStateManager.notifyImageSaved();
+    _snack('✓ High-res sketch saved to FaceTrace folder');
+  } catch (e) {
+    _snack('Download failed: $e');
+  }
+}
 
   void _resetAll() {
     HapticFeedback.mediumImpact();
