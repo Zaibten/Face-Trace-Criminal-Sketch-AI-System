@@ -15,685 +15,558 @@ class ArtsScreen extends StatefulWidget {
 }
 
 class _ArtsScreenState extends State<ArtsScreen> with TickerProviderStateMixin {
+
+  // ── Design constants ────────────────────────────────────────────────────────
+  static const _bg      = Color(0xFF080C12);
+  static const _surface = Color(0xFF0F1923);
+  static const _border  = Color(0xFF1E3050);
+  static const _blue    = Color(0xFF4D9FFF);
+  static const _green   = Color(0xFF00E676);
+  static const _red     = Color(0xFFFF5252);
+  static const _tPri    = Color(0xFFECF0F5);
+  static const _tSec    = Color(0xFF8BAAC8);
+  static const _tMuted  = Color(0xFF4A6580);
+  static const _tUrdu   = Color(0xFF6B8FAF);
+
+  static const _tsUrdu = TextStyle(color: _tUrdu, fontSize: 10, height: 1.4);
+
+  // ── State ───────────────────────────────────────────────────────────────────
   List<FileSystemEntity> imgList = [];
   bool _isLoading = true;
-  
-  // Animation Controllers
-  late AnimationController _fadeController;
-  late AnimationController _refreshController;
-  late AnimationController _autoRefreshController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _rotationAnimation;
-  
-  // Auto-refresh timer
-  late Timer _autoRefreshTimer;
+
+  // ── Animation controllers ───────────────────────────────────────────────────
+  late AnimationController _fadeCtrl;
+  late AnimationController _refreshCtrl;
+  late AnimationController _autoRefreshCtrl;
+  late Animation<double>   _fadeAnim;
+  late Timer               _autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadImages();
     _initAnimations();
+    _loadImages();
     _startAutoRefresh();
   }
 
   void _initAnimations() {
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    
-    _refreshController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    
-    _autoRefreshController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-    
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeInOut,
-    );
-    
-    _rotationAnimation = CurvedAnimation(
-      parent: _refreshController,
-      curve: Curves.easeInOut,
-    );
-    
-    _fadeController.forward();
+    _fadeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
+    _refreshCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _autoRefreshCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1000))
+      ..repeat(reverse: true);
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
+    _fadeCtrl.forward();
   }
 
   void _startAutoRefresh() {
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      if (mounted) {
-        _refreshImages();
-      }
+    _autoRefreshTimer =
+        Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted) _refreshImages();
     });
   }
 
   Future<void> _refreshImages() async {
     HapticFeedback.mediumImpact();
-    await _refreshController.forward(from: 0);
+    await _refreshCtrl.forward(from: 0);
     await _loadImages();
-    await Future.delayed(const Duration(milliseconds: 500));
-    _refreshController.reset();
+    await Future.delayed(const Duration(milliseconds: 400));
+    _refreshCtrl.reset();
   }
 
   Future<void> _loadImages() async {
     setState(() => _isLoading = true);
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final folder = Directory("/storage/emulated/0/Android/data/com.example.pictureai/files/FaceTrace/");
-      
+      final folder = Directory(
+          '/storage/emulated/0/Android/data/com.example.pictureai/files/FaceTrace/');
       if (await folder.exists()) {
-        final List<FileSystemEntity> files = await folder.list().toList();
-        final List<FileSystemEntity> images = files
-            .where((file) => file.path.endsWith('.png'))
-            .toList()
-            ..sort((a, b) {
-              final aStat = File(a.path).statSync();
-              final bStat = File(b.path).statSync();
-              return bStat.modified.compareTo(aStat.modified);
-            });
-        
+        final files = await folder.list().toList();
+        final images = files.where((f) => f.path.endsWith('.png')).toList()
+          ..sort((a, b) {
+            final aStat = File(a.path).statSync();
+            final bStat = File(b.path).statSync();
+            return bStat.modified.compareTo(aStat.modified);
+          });
         setState(() => imgList = images);
       } else {
         setState(() => imgList = []);
       }
     } catch (e) {
       debugPrint('Error loading images: $e');
-      _showSnackBar('Error loading images', Colors.red);
+      _snack('Error loading images  /  تصاویر لوڈ کرنے میں خرابی', _red);
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  void _showImageDetail(FileSystemEntity image, int index) {
-    HapticFeedback.mediumImpact();
-    final file = File(image.path);
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(16),
-          child: TweenAnimationBuilder(
-            duration: const Duration(milliseconds: 400),
-            tween: Tween<double>(begin: 0, end: 1),
-            curve: Curves.elasticOut,
-            builder: (context, scale, child) {
-              return Transform.scale(
-                scale: scale,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF0F1923),
-                        const Color(0xFF0A1628),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: const Color(0xFF4D9FFF).withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                        child: Image.file(
-                          file,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: MediaQuery.of(context).size.height * 0.5,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildActionButton(
-                                    icon: Icons.share_rounded,
-                                    label: 'Share',
-                                    color: const Color(0xFF00E676),
-                                    onTap: () => _shareImage(file),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildActionButton(
-                                    icon: Icons.save_alt_rounded,
-                                    label: 'Gallery',
-                                    color: const Color(0xFF4D9FFF),
-                                    onTap: () => _saveToGallery(file),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildActionButton(
-                                    icon: Icons.delete_rounded,
-                                    label: 'Delete',
-                                    color: Colors.red,
-                                    onTap: () {
-                                      Navigator.pop(context);
-                                      _deleteImage(image, index);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Created: ${_formatDate(file.statSync().modified)}',
-                              style: TextStyle(
-                                color: Colors.grey[500],
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
+  // ── Snack bar ────────────────────────────────────────────────────────────────
+  void _snack(String msg, Color color) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg, style: const TextStyle(color: _tPri)),
+        backgroundColor: color.withOpacity(0.85),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ));
+
+  String _formatDate(DateTime d) =>
+      '${d.day}/${d.month}/${d.year}  ${d.hour}:${d.minute.toString().padLeft(2, '0')}';
+
+  // ── Image actions ─────────────────────────────────────────────────────────────
+  Future<void> _shareImage(File img) async {
+    try {
+      await Share.shareXFiles([XFile(img.path)],
+          text: 'Generated by FaceTrace AI');
+      _snack('Shared  /  شیئر ہو گیا', _green);
+    } catch (_) {
+      _snack('Share failed  /  شیئر ناکام', _red);
+    }
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              color.withOpacity(0.2),
-              color.withOpacity(0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+  Future<void> _saveToGallery(File img) async {
+    try {
+      final result = await ImageGallerySaver.saveFile(img.path);
+      if (result['isSuccess'] == true) {
+        _snack('Saved to gallery  /  گیلری میں محفوظ', _green);
+      } else {
+        _snack('Failed to save  /  محفوظ نہیں ہوا', _red);
+      }
+    } catch (_) {
+      _snack('Error saving  /  محفوظ کرنے میں خرابی', _red);
+    }
+  }
+
+  Future<void> _deleteImage(FileSystemEntity img, int idx) async {
+    try {
+      await File(img.path).delete();
+      setState(() => imgList.removeAt(idx));
+      _snack('Deleted  /  حذف ہو گئی', _red);
+    } catch (_) {
+      _snack('Delete failed  /  حذف ناکام', _red);
+    }
+  }
+
+  // ── Dialogs ──────────────────────────────────────────────────────────────────
+  void _showImageDetail(FileSystemEntity img, int idx) {
+    HapticFeedback.mediumImpact();
+    final file = File(img.path);
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: TweenAnimationBuilder(
+          duration: const Duration(milliseconds: 400),
+          tween: Tween<double>(begin: 0, end: 1),
+          curve: Curves.elasticOut,
+          builder: (_, scale, __) => Transform.scale(
+            scale: scale,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  colors: [Color(0xFF0F1923), Color(0xFF0A1628)],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: _blue.withOpacity(0.35), width: 1.5),
               ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                // Image preview
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24)),
+                  child: Image.file(file,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: MediaQuery.of(context).size.height * 0.48),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(children: [
+                    // Date
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.calendar_today_outlined,
+                            size: 12, color: _tMuted),
+                        const SizedBox(width: 5),
+                        Text(
+                          _formatDate(file.statSync().modified),
+                          style: const TextStyle(
+                              color: _tMuted, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('تاریخ', style: _tsUrdu),
+                    const SizedBox(height: 14),
+
+                    // Action buttons
+                    Row(children: [
+                      Expanded(child: _detailBtn(
+                          Icons.share_rounded, 'Share', 'شیئر', _green,
+                          () => _shareImage(file))),
+                      const SizedBox(width: 10),
+                      Expanded(child: _detailBtn(
+                          Icons.save_alt_rounded, 'Gallery', 'گیلری', _blue,
+                          () => _saveToGallery(file))),
+                      const SizedBox(width: 10),
+                      Expanded(child: _detailBtn(
+                          Icons.delete_rounded, 'Delete', 'حذف', _red,
+                          () {
+                        Navigator.pop(context);
+                        _deleteImage(img, idx);
+                      })),
+                    ]),
+                  ]),
+                ),
+              ]),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _shareImage(File image) async {
-    try {
-      await Share.shareXFiles(
-        [XFile(image.path)],
-        text: 'Generated by FaceTrace AI',
+  Widget _detailBtn(IconData icon, String en, String ur, Color color,
+      VoidCallback onTap) =>
+      GestureDetector(
+        onTap: () { HapticFeedback.selectionClick(); onTap(); },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [
+              color.withOpacity(0.18), color.withOpacity(0.04),
+            ]),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Column(children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 3),
+            Text(en, style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+            Text(ur, style: TextStyle(color: color.withOpacity(0.7),
+                fontSize: 9)),
+          ]),
+        ),
       );
-      _showSnackBar('Image shared successfully', Colors.green);
-    } catch (e) {
-      _showSnackBar('Error sharing image', Colors.red);
-    }
-  }
 
-  Future<void> _saveToGallery(File image) async {
-    try {
-      final result = await ImageGallerySaver.saveFile(image.path);
-      if (result['isSuccess'] == true) {
-        _showSnackBar('Image saved to gallery', Colors.green);
-      } else {
-        _showSnackBar('Failed to save to gallery', Colors.red);
-      }
-    } catch (e) {
-      _showSnackBar('Error saving to gallery', Colors.red);
-    }
-  }
-
-  Future<void> _deleteImage(FileSystemEntity image, int index) async {
-    try {
-      final file = File(image.path);
-      await file.delete();
-      setState(() {
-        imgList.removeAt(index);
-      });
-      _showSnackBar('Image deleted successfully', Colors.red);
-    } catch (e) {
-      _showSnackBar('Error deleting image', Colors.red);
-    }
-  }
-
-  void _confirmDelete(FileSystemEntity image, int index) {
+  void _confirmDelete(FileSystemEntity img, int idx) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0F1923),
+      builder: (_) => AlertDialog(
+        backgroundColor: _surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.red.withOpacity(0.3)),
+          side: BorderSide(color: _red.withOpacity(0.3)),
         ),
-        title: const Text(
-          'Delete Image',
-          style: TextStyle(color: Colors.red),
-        ),
-        content: const Text(
-          'Are you sure you want to delete this image?',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+          Text('Delete Image', style: TextStyle(color: _red, fontSize: 16)),
+          Text('تصویر حذف کریں', style: TextStyle(color: _tUrdu, fontSize: 11)),
+        ]),
+        content: Column(mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start, children: const [
+          Text('Are you sure you want to delete this image?',
+              style: TextStyle(color: Colors.white, fontSize: 13)),
+          SizedBox(height: 4),
+          Text('کیا آپ واقعی یہ تصویر حذف کرنا چاہتے ہیں؟',
+              style: _tsUrdu),
+        ]),
         actions: [
+          TextButton(onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel  /  منسوخ',
+                  style: TextStyle(color: Colors.grey, fontSize: 12))),
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteImage(image, index);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
+            onPressed: () { Navigator.pop(context); _deleteImage(img, idx); },
+            child: const Text('Delete  /  حذف',
+                style: TextStyle(color: _red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
-  }
-
-  void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color.withOpacity(0.8),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   void _showDeleteAllDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF0F1923),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.red.withOpacity(0.3)),
+      builder: (_) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: _red.withOpacity(0.3)),
+        ),
+        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+          Text('Delete All', style: TextStyle(color: _red, fontSize: 16)),
+          Text('سب تصاویر حذف کریں', style: TextStyle(color: _tUrdu, fontSize: 11)),
+        ]),
+        content: Column(mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start, children: const [
+          Text('Are you sure you want to delete all images?',
+              style: TextStyle(color: Colors.white, fontSize: 13)),
+          SizedBox(height: 4),
+          Text('کیا آپ واقعی تمام تصاویر حذف کرنا چاہتے ہیں؟',
+              style: _tsUrdu),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel  /  منسوخ',
+                  style: TextStyle(color: Colors.grey, fontSize: 12))),
+          TextButton(
+            onPressed: () async {
+              for (final img in imgList) await File(img.path).delete();
+              setState(() => imgList.clear());
+              Navigator.pop(context);
+              _snack('All deleted  /  سب حذف ہو گئیں', _red);
+            },
+            child: const Text('Delete All  /  سب حذف',
+                style: TextStyle(color: _red, fontWeight: FontWeight.bold)),
           ),
-          title: const Text(
-            'Delete All',
-            style: TextStyle(color: Colors.red),
-          ),
-          content: const Text(
-            'Are you sure you want to delete all images?',
-            style: TextStyle(color: Colors.white),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () async {
-                for (var image in imgList) {
-                  await File(image.path).delete();
-                }
-                setState(() => imgList.clear());
-                Navigator.pop(context);
-                _showSnackBar('All images deleted', Colors.red);
-              },
-              child: const Text(
-                'Delete All',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
-    _refreshController.dispose();
-    _autoRefreshController.dispose();
+    _fadeCtrl.dispose();
+    _refreshCtrl.dispose();
+    _autoRefreshCtrl.dispose();
     _autoRefreshTimer.cancel();
     super.dispose();
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  BUILD
+  // ═══════════════════════════════════════════════════════════════════════════
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF080C12),
+      backgroundColor: _bg,
       appBar: AppBar(
-        title: const Text(
-          'My Arts',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-            fontSize: 20,
-          ),
-        ),
         backgroundColor: const Color(0xFF0A1628),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         flexibleSpace: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF0A1628),
-                const Color(0xFF0D1F3C),
-              ],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [Color(0xFF0A1628), Color(0xFF0D1F3C)],
             ),
           ),
         ),
+        title: Column(mainAxisSize: MainAxisSize.min, children: const [
+          Text('My Arts',
+              style: TextStyle(fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5, fontSize: 18)),
+          Text('میری تصاویر',
+              style: TextStyle(color: _tUrdu, fontSize: 11)),
+        ]),
         actions: [
-          // Auto-refresh indicator
+          // Auto-refresh pulse indicator
           AnimatedBuilder(
-            animation: _autoRefreshController,
-            builder: (context, child) {
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(
-                  Icons.autorenew_rounded,
-                  color: const Color(0xFF4D9FFF).withOpacity(0.5 + _autoRefreshController.value * 0.5),
-                  size: 20,
-                ),
-              );
-            },
+            animation: _autoRefreshCtrl,
+            builder: (_, __) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Icon(Icons.autorenew_rounded,
+                  size: 18,
+                  color: _blue.withOpacity(
+                      0.4 + _autoRefreshCtrl.value * 0.6)),
+            ),
           ),
-          // Manual Refresh Button
+          // Manual refresh
           AnimatedBuilder(
-            animation: _refreshController,
-            builder: (context, child) {
-              return Transform.rotate(
-                angle: _refreshController.value * 6.28318,
-                child: IconButton(
-                  icon: const Icon(Icons.refresh_rounded),
-                  onPressed: _refreshImages,
-                  tooltip: 'Refresh',
-                ),
-              );
-            },
+            animation: _refreshCtrl,
+            builder: (_, __) => Transform.rotate(
+              angle: _refreshCtrl.value * 6.28318,
+              child: IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: _refreshImages,
+                tooltip: 'Refresh  /  تازہ کریں',
+              ),
+            ),
           ),
-          // Delete All Button
+          // Delete all
           if (imgList.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep_rounded),
               onPressed: _showDeleteAllDialog,
-              tooltip: 'Delete all',
+              tooltip: 'Delete All  /  سب حذف کریں',
             ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshImages,
-        color: const Color(0xFF4D9FFF),
-        backgroundColor: const Color(0xFF0F1923),
+        color: _blue,
+        backgroundColor: _surface,
         child: FadeTransition(
-          opacity: _fadeAnimation,
+          opacity: _fadeAnim,
           child: _isLoading
-              ? _buildLoadingShimmer()
+              ? _buildShimmer()
               : imgList.isEmpty
-                  ? _buildEmptyState()
-                  : _buildImageGrid(),
+                  ? _buildEmpty()
+                  : _buildGrid(),
         ),
       ),
     );
   }
 
-  Widget _buildLoadingShimmer() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.7, // Reduced from 0.8 to prevent overflow
+  // ── Loading shimmer ──────────────────────────────────────────────────────────
+  Widget _buildShimmer() => GridView.builder(
+    padding: const EdgeInsets.all(16),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, crossAxisSpacing: 12,
+        mainAxisSpacing: 12, childAspectRatio: 0.70),
+    itemCount: 6,
+    itemBuilder: (_, __) => Container(
+      decoration: BoxDecoration(
+          color: _surface, borderRadius: BorderRadius.circular(16)),
+      child: Column(children: [
+        Expanded(child: Container(
+          decoration: BoxDecoration(
+              color: _border,
+              borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16))),
+        )),
+        const SizedBox(height: 10),
+        Container(width: 80, height: 10, color: _border),
+        const SizedBox(height: 6),
+        Container(width: 60, height: 8, color: _border),
+        const SizedBox(height: 12),
+      ]),
+    ),
+  );
+
+  // ── Empty state ──────────────────────────────────────────────────────────────
+  Widget _buildEmpty() => Center(
+    child: TweenAnimationBuilder(
+      duration: const Duration(milliseconds: 800),
+      tween: Tween<double>(begin: 0, end: 1),
+      curve: Curves.elasticOut,
+      builder: (_, scale, __) => Transform.scale(
+        scale: scale,
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              gradient: RadialGradient(colors: [
+                _blue.withOpacity(0.15), Colors.transparent,
+              ]),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.photo_library_outlined,
+                size: 76, color: _blue.withOpacity(0.5)),
+          ),
+          const SizedBox(height: 20),
+          const Text('No images yet',
+              style: TextStyle(color: _tSec, fontSize: 20,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          const Text('ابھی تک کوئی تصویر نہیں',
+              style: TextStyle(color: _tUrdu, fontSize: 13)),
+          const SizedBox(height: 10),
+          const Text('Generate and download images to see them here',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _tMuted, fontSize: 13)),
+          const SizedBox(height: 4),
+          const Text('تصاویر بنائیں اور ڈاؤن لوڈ کریں',
+              style: TextStyle(color: _tUrdu, fontSize: 11)),
+        ]),
       ),
-      itemCount: 6,
-      itemBuilder: (context, index) => Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F1923),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            Expanded(
+    ),
+  );
+
+  // ── Image grid ───────────────────────────────────────────────────────────────
+  Widget _buildGrid() => GridView.builder(
+    padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 80),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, crossAxisSpacing: 12,
+        mainAxisSpacing: 12, childAspectRatio: 0.70),
+    itemCount: imgList.length,
+    itemBuilder: (_, idx) {
+      final img = imgList[idx];
+      return TweenAnimationBuilder(
+        duration: Duration(milliseconds: 280 + idx * 40),
+        tween: Tween<double>(begin: 0, end: 1),
+        curve: Curves.easeOutCubic,
+        builder: (_, v, __) => Transform.scale(
+          scale: v,
+          child: Opacity(
+            opacity: v,
+            child: GestureDetector(
+              onTap: () => _showImageDetail(img, idx),
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E3050),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    colors: [Color(0xFF0F1923), Color(0xFF0A1628)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _blue.withOpacity(0.28), width: 1),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: 100,
-              height: 12,
-              color: const Color(0xFF1E3050),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: TweenAnimationBuilder(
-        duration: const Duration(milliseconds: 800),
-        tween: Tween<double>(begin: 0, end: 1),
-        curve: Curves.elasticOut,
-        builder: (context, scale, child) {
-          return Transform.scale(
-            scale: scale,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF4D9FFF).withOpacity(0.15),
-                        const Color(0xFF4D9FFF).withOpacity(0.05),
-                      ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16)),
+                        child: Image.file(File(img.path),
+                            fit: BoxFit.cover, width: double.infinity),
+                      ),
                     ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.photo_library_outlined,
-                    size: 80,
-                    color: const Color(0xFF4D9FFF).withOpacity(0.5),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'No images yet',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Generate and download images to see them here',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildImageGrid() {
-    return GridView.builder(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 80, // Add extra bottom padding
-      ),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.7, // Reduced from 0.8 to make items shorter
-      ),
-      itemCount: imgList.length,
-      itemBuilder: (context, index) {
-        final image = imgList[index];
-        return TweenAnimationBuilder(
-          duration: Duration(milliseconds: 300 + (index * 50)),
-          tween: Tween<double>(begin: 0, end: 1),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: Opacity(
-                opacity: value,
-                child: GestureDetector(
-                  onTap: () => _showImageDetail(image, index),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFF0F1923),
-                          const Color(0xFF0A1628),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _formatDate(File(img.path).statSync().modified),
+                            style: const TextStyle(
+                                color: _tMuted, fontSize: 9),
+                          ),
+                          const Text('تاریخ', style: TextStyle(
+                              color: _tUrdu, fontSize: 8)),
+                          const SizedBox(height: 6),
+                          Row(children: [
+                            _gridBtn(Icons.share_rounded, _green,
+                                () => _shareImage(File(img.path))),
+                            const SizedBox(width: 6),
+                            _gridBtn(Icons.save_alt_rounded, _blue,
+                                () => _saveToGallery(File(img.path))),
+                            const SizedBox(width: 6),
+                            _gridBtn(Icons.delete_rounded, _red,
+                                () => _confirmDelete(img, idx)),
+                          ]),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF4D9FFF).withOpacity(0.3),
-                        width: 1,
-                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                            child: Image.file(
-                              File(image.path),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _formatDate(File(image.path).statSync().modified),
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 10,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  _buildGridAction(
-                                    icon: Icons.share_rounded,
-                                    color: const Color(0xFF00E676),
-                                    onTap: () => _shareImage(File(image.path)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _buildGridAction(
-                                    icon: Icons.save_alt_rounded,
-                                    color: const Color(0xFF4D9FFF),
-                                    onTap: () => _saveToGallery(File(image.path)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _buildGridAction(
-                                    icon: Icons.delete_rounded,
-                                    color: Colors.red,
-                                    onTap: () => _confirmDelete(image, index),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildGridAction({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         ),
-        child: Icon(icon, color: color, size: 16),
-      ),
-    );
-  }
+      );
+    },
+  );
+
+  Widget _gridBtn(IconData icon, Color color, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: () { HapticFeedback.selectionClick(); onTap(); },
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: color, size: 15),
+        ),
+      );
 }
