@@ -12,6 +12,7 @@ Criminal Sketch AI System is an intelligent cross-platform application built wit
 Based on the provided information, the application generates a visual criminal sketch automatically using AI.
 
 The project is designed to assist investigation workflows, reporting systems, and smart criminal identification processes.
+The **Google Drive Link** of the project is: https://drive.google.com/drive/folders/1_3mITALoUPzmajp7Ww9MZIOa0Riy0f8J?usp=sharing
 
 ---
 
