@@ -283,6 +283,22 @@ app.post('/api/generate-sketch', async (req, res) => {
   }
 });
 
+app.get('/api/ai-link', (req, res) => {
+  const link = process.env.AI_LINK;
+ 
+  if (!link) {
+    return res.status(500).json({
+      success: false,
+      message: 'AI_LINK is not configured on the server',
+    });
+  }
+ 
+  return res.status(200).json({
+    success: true,
+    url: link,
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ROUTE 3: Health Check  GET /api/health
 // ═══════════════════════════════════════════════════════════════════════════════

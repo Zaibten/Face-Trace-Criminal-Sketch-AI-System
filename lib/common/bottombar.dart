@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:facetrace/constants/global_variables.dart';
+import '../features/CustomModel/AI.dart';
 import '../features/art/screens/saved_arts_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/setting/setting.dart';
@@ -19,11 +20,12 @@ class _BottomBarState extends State<BottomBar> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   // List of screens for bottom navigation
   final List<Widget> _screens = [
     const HomeScreen(),
     const ArtsScreen(),
+    const AIScreen(),
     const SettingsScreen(),
   ];
 
@@ -82,7 +84,7 @@ class _BottomBarState extends State<BottomBar> with TickerProviderStateMixin {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -100,6 +102,12 @@ class _BottomBarState extends State<BottomBar> with TickerProviderStateMixin {
                   ),
                   _buildNavItem(
                     index: 2,
+                    icon: Icons.auto_awesome_outlined,
+                    label: 'AI',
+                    activeIcon: Icons.auto_awesome_rounded,
+                  ),
+                  _buildNavItem(
+                    index: 3,
                     icon: Icons.settings_outlined,
                     label: 'Settings',
                     activeIcon: Icons.settings_rounded,
@@ -120,7 +128,7 @@ class _BottomBarState extends State<BottomBar> with TickerProviderStateMixin {
     required String label,
   }) {
     final isSelected = _selectedIndex == index;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -131,7 +139,7 @@ class _BottomBarState extends State<BottomBar> with TickerProviderStateMixin {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 20 : 12,
+          horizontal: isSelected ? 16 : 12,
           vertical: 10,
         ),
         decoration: BoxDecoration(
