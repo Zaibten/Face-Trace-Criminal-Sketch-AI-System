@@ -550,26 +550,20 @@ const header = (title, sub) => `
   <div class="header-right">
     <button class="header-icon-btn"><i class="fas fa-bell"></i><span class="badge-dot"></span></button>
     <button class="header-icon-btn"><i class="fas fa-cog"></i></button>
-    <a href="/logout" class="logout-btn"  onclick="return confirmLogout(event)"><i class="fas fa-sign-out-alt"></i>Logout</a>
-
-  <i class="fas fa-sign-out-alt"></i>
-  <span class="nav-label">Logout</span>
-</a>
-<script>
-  function confirmLogout(event) {
-    event.preventDefault(); // stop immediate redirect
-
-    const confirmAction = confirm("Are you sure you want to logout?");
-
-    if (confirmAction) {
-      window.location.href = "/logout"; // proceed
-    }
-
-    return false;
-  }
-</script>
+    <a href="/logout" class="logout-btn" onclick="return confirmLogout(event)">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
   </div>
 </div>`;
+
+// Inside getShell's <script> block, add:
+function confirmLogout(event) {
+  event.preventDefault();
+  if (confirm("Are you sure you want to logout?")) {
+    window.location.href = "/logout";
+  }
+  return false;
+}
 
 // ─── Auth guard ────────────────────────────────────────────────────────────────
 // Simple cookie-based session (no express-session dep; lightweight)
