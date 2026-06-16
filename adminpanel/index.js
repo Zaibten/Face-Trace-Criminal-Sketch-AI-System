@@ -397,9 +397,7 @@ const getShell = (title, bodyContent, activePage = 'home') => `
       background-image: radial-gradient(ellipse at 20% 50%, rgba(124,92,252,.12) 0%, transparent 60%),
                         radial-gradient(ellipse at 80% 20%, rgba(232,93,138,.1) 0%, transparent 55%);
     }
-    .login-box {
-      width: 100%; max-width: 420px; padding: 0 20px;
-    }
+    .login-box { width: 100%; max-width: 420px; padding: 0 20px; }
     .login-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 20px; padding: 40px 36px;
@@ -439,6 +437,15 @@ const getShell = (title, bodyContent, activePage = 'home') => `
 ${bodyContent}
 <div id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
 <script>
+  // ── Logout confirm (defined ONCE here, used by sidebar + header) ──
+  function confirmLogout(event) {
+    event.preventDefault();
+    if (confirm('Are you sure you want to logout?')) {
+      window.location.href = '/logout';
+    }
+    return false;
+  }
+
   // ── Sidebar toggle ────────────────────────────────
   const sidebar   = document.getElementById('sidebar');
   const overlay   = document.getElementById('overlay');
@@ -489,14 +496,15 @@ ${bodyContent}
 </body>
 </html>`;
 
+// ── sidebarNav: NO <script> tag here — confirmLogout lives in getShell ────────
 const sidebarNav = (active) => `
 <div class="overlay" id="overlay"></div>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <div class="sidebar-logo" style="display: flex; align-items: center; justify-content: center; padding: 12px;">
-  <img src="/assets/logo.png" alt="Logo" 
-       style="width: 60px; height: 60px; object-fit: contain; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-</div>
+    <div class="sidebar-logo" style="display:flex;align-items:center;justify-content:center;padding:4px;">
+      <img src="/assets/logo.png" alt="Logo"
+           style="width:36px;height:36px;object-fit:contain;border-radius:8px;">
+    </div>
     <div class="sidebar-logo-text">Face Trace</div>
   </div>
   <nav class="sidebar-nav">
@@ -507,28 +515,14 @@ const sidebarNav = (active) => `
     <a href="/users" class="nav-item ${active === 'users' ? 'active' : ''}">
       <i class="fas fa-users"></i><span class="nav-label">Users</span>
     </a>
-    
     <div class="nav-section-title">System</div>
     <a href="/servers" class="nav-item ${active === 'servers' ? 'active' : ''}">
       <i class="fas fa-server"></i><span class="nav-label">Servers</span>
     </a>
     <a href="/logout" class="nav-item" onclick="return confirmLogout(event)">
-  <i class="fas fa-sign-out-alt"></i>
-  <span class="nav-label">Logout</span>
-</a>
-<script>
-  function confirmLogout(event) {
-    event.preventDefault(); // stop immediate redirect
-
-    const confirmAction = confirm("Are you sure you want to logout?");
-
-    if (confirmAction) {
-      window.location.href = "/logout"; // proceed
-    }
-
-    return false;
-  }
-</script>
+      <i class="fas fa-sign-out-alt"></i>
+      <span class="nav-label">Logout</span>
+    </a>
   </nav>
   <div class="sidebar-footer">
     <div class="sidebar-user">
@@ -541,7 +535,8 @@ const sidebarNav = (active) => `
   </div>
 </div>`;
 
-const header = (title, sub) => `
+// ── header: NO <script> tag here either ───────────────────────────────────────
+const header = (title) => `
 <div class="header">
   <div class="header-left">
     <button class="toggle-btn" id="toggleBtn"><i class="fas fa-bars"></i></button>
@@ -556,17 +551,7 @@ const header = (title, sub) => `
   </div>
 </div>`;
 
-// Inside getShell's <script> block, add:
-function confirmLogout(event) {
-  event.preventDefault();
-  if (confirm("Are you sure you want to logout?")) {
-    window.location.href = "/logout";
-  }
-  return false;
-}
-
 // ─── Auth guard ────────────────────────────────────────────────────────────────
-// Simple cookie-based session (no express-session dep; lightweight)
 const sessions = new Set();
 function requireAuth(req, res, next) {
   const cookie = req.headers.cookie || '';
@@ -579,17 +564,19 @@ function requireAuth(req, res, next) {
 
 // LOGIN PAGE
 app.get('/', (req, res) => {
-  const error = req.query.error ? '<p class="error-msg"><i class="fas fa-exclamation-circle"></i> Invalid username or password.</p>' : '';
+  const error = req.query.error
+    ? '<p class="error-msg"><i class="fas fa-exclamation-circle"></i> Invalid username or password.</p>'
+    : '';
   res.send(getShell('Login', `
     <div class="login-wrap">
       <div class="login-box">
         <div class="login-card">
-          <div class="login-logo" style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-  <img src="/assets/logo.png" alt="Logo" 
-       style="width: 80px; height: 80px; object-fit: contain; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); transition: transform 0.3s ease;"
-       onmouseover="this.style.transform='scale(1.1)'" 
-       onmouseout="this.style.transform='scale(1)'">
-</div>
+          <div class="login-logo" style="display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+            <img src="/assets/logo.png" alt="Logo"
+                 style="width:80px;height:80px;object-fit:contain;border-radius:15px;box-shadow:0 6px 15px rgba(0,0,0,0.25);transition:transform 0.3s ease;"
+                 onmouseover="this.style.transform='scale(1.1)'"
+                 onmouseout="this.style.transform='scale(1)'">
+          </div>
           <div class="login-title">Welcome back</div>
           <div class="login-sub">Sign in to Face Trace Admin Panel</div>
           <form action="/login" method="POST">
@@ -613,8 +600,10 @@ app.get('/', (req, res) => {
 // LOGIN POST
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  if (username === (process.env.ADMIN_USERNAME || 'admin') &&
-      password === (process.env.ADMIN_PASSWORD || 'admin123')) {
+  if (
+    username === (process.env.ADMIN_USERNAME || 'admin') &&
+    password === (process.env.ADMIN_PASSWORD || 'admin123')
+  ) {
     const sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
     sessions.add(sid);
     res.setHeader('Set-Cookie', `sid=${sid}; Path=/; HttpOnly; SameSite=Lax`);
@@ -632,24 +621,23 @@ app.get('/logout', (req, res) => {
   res.redirect('/');
 });
 
-// ── DASHBOARD (HOME) ───────────────────────────────────────────────────────────
+// ── DASHBOARD ──────────────────────────────────────────────────────────────────
 app.get('/home', requireAuth, async (req, res) => {
   try {
-    const users         = await User.find();
-    const totalUsers    = users.length;
-    const basicCount    = await Quiz.countDocuments({ BasicQuiz: true });
-    const advanceCount  = await Quiz.countDocuments({ AdvanceQuiz: { $ne: null } });
+    const users        = await User.find();
+    const totalUsers   = users.length;
+    const basicCount   = await Quiz.countDocuments({ BasicQuiz: true });
+    const advanceCount = await Quiz.countDocuments({ AdvanceQuiz: { $ne: null } });
 
     const body = `
     <div class="layout">
       ${sidebarNav('home')}
       <div class="main">
-        ${header('Dashboard', 'Overview')}
+        ${header('Dashboard')}
         <div class="content">
           <div class="page-title fade-up">Dashboard</div>
           <div class="page-subtitle fade-up delay-1">Welcome back, Admin — here's what's happening with Face Trace.</div>
 
-          <!-- Stat Cards -->
           <div class="stats-grid">
             <div class="stat-card purple fade-up delay-1">
               <div class="stat-glow"></div>
@@ -681,7 +669,6 @@ app.get('/home', requireAuth, async (req, res) => {
             </div>
           </div>
 
-          <!-- Charts -->
           <div class="charts-grid">
             <div class="card fade-up delay-2">
               <div class="card-header">
@@ -693,7 +680,7 @@ app.get('/home', requireAuth, async (req, res) => {
             </div>
             <div class="card fade-up delay-3">
               <div class="card-header">
-                <div class="card-title"><i class="fas fa-chart-doughnut"></i>Quiz Distribution</div>
+                <div class="card-title"><i class="fas fa-chart-pie"></i>Quiz Distribution</div>
               </div>
               <div class="card-body">
                 <canvas id="doughnutChart" height="220"></canvas>
@@ -701,7 +688,6 @@ app.get('/home', requireAuth, async (req, res) => {
             </div>
           </div>
 
-          <!-- Server Status -->
           <div class="card fade-up delay-4">
             <div class="card-header">
               <div class="card-title"><i class="fas fa-server"></i>Server Health</div>
@@ -731,7 +717,6 @@ app.get('/home', requireAuth, async (req, res) => {
       </div>
     </div>
     <script>
-      // Bar Chart
       new Chart(document.getElementById('barChart'), {
         type: 'bar',
         data: {
@@ -740,12 +725,13 @@ app.get('/home', requireAuth, async (req, res) => {
             label: 'Count',
             data: [${totalUsers}, ${basicCount}, ${advanceCount}],
             backgroundColor: ['rgba(124,92,252,.7)','rgba(232,93,138,.7)','rgba(62,207,176,.7)'],
-            borderColor:      ['#7c5cfc','#e85d8a','#3ecfb0'],
+            borderColor: ['#7c5cfc','#e85d8a','#3ecfb0'],
             borderWidth: 2, borderRadius: 8
           }]
         },
         options: {
-          responsive: true, animation: { duration: 900, easing: 'easeOutQuart' },
+          responsive: true,
+          animation: { duration: 900, easing: 'easeOutQuart' },
           plugins: { legend: { display: false } },
           scales: {
             y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#6b7280' } },
@@ -753,7 +739,6 @@ app.get('/home', requireAuth, async (req, res) => {
           }
         }
       });
-      // Doughnut Chart
       new Chart(document.getElementById('doughnutChart'), {
         type: 'doughnut',
         data: {
@@ -786,7 +771,9 @@ app.get('/users', requireAuth, async (req, res) => {
 
     const rows = users.map((u, i) => {
       const initials = (u.name || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-      const halfPass = u.password ? u.password.slice(0, Math.ceil(u.password.length / 2)) + '••••' : 'N/A';
+      const halfPass = u.password
+        ? u.password.slice(0, Math.ceil(u.password.length / 2)) + '••••'
+        : 'N/A';
       return `
       <tr>
         <td style="color:var(--muted);font-size:12px">${i + 1}</td>
@@ -800,7 +787,7 @@ app.get('/users', requireAuth, async (req, res) => {
           </div>
         </td>
         <td class="pass-cell">${halfPass}</td>
-        <td><span class="pill active"><i class="fas fa-circle" style="font-size:6px"></i>Active</span></td>
+        <td><span class="pill active"><i class="fas fa-circle" style="font-size:6px"></i> Active</span></td>
         <td>
           <form class="del-form" action="/delete-user/${u._id}" method="POST">
             <button class="btn-del" type="submit"><i class="fas fa-trash-alt"></i> Delete</button>
@@ -813,7 +800,7 @@ app.get('/users', requireAuth, async (req, res) => {
     <div class="layout">
       ${sidebarNav('users')}
       <div class="main">
-        ${header('Users', 'Manage')}
+        ${header('Users')}
         <div class="content">
           <div class="page-title fade-up">Users</div>
           <div class="page-subtitle fade-up delay-1">Manage all registered Face Trace users.</div>
@@ -856,16 +843,20 @@ app.get('/quiz', requireAuth, async (req, res) => {
         <td style="color:var(--muted);font-size:12px">${i + 1}</td>
         <td>${q.email}</td>
         <td><span class="pill ${q.BasicQuiz ? 'yes' : 'no'}">${q.BasicQuiz ? 'Yes' : 'No'}</span></td>
-        <td>${q.BasicQuizMarks !== null ? `<span class="score-chip">${q.BasicQuizMarks}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${q.BasicQuizMarks !== null
+          ? `<span class="score-chip">${q.BasicQuizMarks}</span>`
+          : '<span style="color:var(--muted)">—</span>'}</td>
         <td><span class="pill ${q.AdvanceQuiz ? 'yes' : 'no'}">${q.AdvanceQuiz ? 'Yes' : 'No'}</span></td>
-        <td>${q.AdvanceQuizMarks !== null ? `<span class="score-chip">${q.AdvanceQuizMarks}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${q.AdvanceQuizMarks !== null
+          ? `<span class="score-chip">${q.AdvanceQuizMarks}</span>`
+          : '<span style="color:var(--muted)">—</span>'}</td>
       </tr>`).join('');
 
     const body = `
     <div class="layout">
       ${sidebarNav('quiz')}
       <div class="main">
-        ${header('Quiz Results', 'Review')}
+        ${header('Quiz Results')}
         <div class="content">
           <div class="page-title fade-up">Quiz Results</div>
           <div class="page-subtitle fade-up delay-1">View all user quiz attempts and scores.</div>
@@ -881,7 +872,8 @@ app.get('/quiz', requireAuth, async (req, res) => {
               <table>
                 <thead>
                   <tr>
-                    <th>#</th><th>Email</th><th>Basic Quiz</th><th>Basic Score</th><th>Advanced Quiz</th><th>Advanced Score</th>
+                    <th>#</th><th>Email</th><th>Basic Quiz</th><th>Basic Score</th>
+                    <th>Advanced Quiz</th><th>Advanced Score</th>
                   </tr>
                 </thead>
                 <tbody id="usersBody">${rows}</tbody>
@@ -901,8 +893,8 @@ app.get('/quiz', requireAuth, async (req, res) => {
 // ── SERVERS PAGE ───────────────────────────────────────────────────────────────
 app.get('/servers', requireAuth, (req, res) => {
   const servers = [
-    { name: 'Production Server', region: 'US-East', status: 'online', uptime: '99.9%', load: '34%', latency: '18ms' },
-    { name: 'Staging Server',    region: 'EU-West', status: 'online', uptime: '98.2%', load: '12%', latency: '42ms' },
+    { name: 'Production Server', region: 'US-East',  status: 'online', uptime: '99.9%', load: '34%', latency: '18ms' },
+    { name: 'Staging Server',    region: 'EU-West',  status: 'online', uptime: '98.2%', load: '12%', latency: '42ms' },
     { name: 'Backup Server',     region: 'AP-South', status: 'online', uptime: '97.1%', load: '5%',  latency: '91ms' },
   ];
 
@@ -911,7 +903,7 @@ app.get('/servers', requireAuth, (req, res) => {
       <td style="color:var(--muted);font-size:12px">${i + 1}</td>
       <td><strong>${s.name}</strong></td>
       <td><span style="color:var(--muted)">${s.region}</span></td>
-      <td><span class="pill active"><i class="fas fa-circle" style="font-size:6px"></i>${s.status}</span></td>
+      <td><span class="pill active"><i class="fas fa-circle" style="font-size:6px"></i> ${s.status}</span></td>
       <td>${s.uptime}</td>
       <td>${s.load}</td>
       <td>${s.latency}</td>
@@ -921,7 +913,7 @@ app.get('/servers', requireAuth, (req, res) => {
   <div class="layout">
     ${sidebarNav('servers')}
     <div class="main">
-      ${header('Servers', 'Monitor')}
+      ${header('Servers')}
       <div class="content">
         <div class="page-title fade-up">Server Monitor</div>
         <div class="page-subtitle fade-up delay-1">Real-time overview of all Face Trace servers.</div>
